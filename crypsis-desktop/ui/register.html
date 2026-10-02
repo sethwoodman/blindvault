@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Create an account - Crypsis</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="panel">
+    <div class="brand">
+      <span>Crypsis</span>
+    </div>
+    
+  <!-- The Login / Register tab slider -->
+    <nav class="page-tabs" aria-label="Sign in or create an account">
+      <a class="page-tab" href="login.html">Login</a>
+      <a class="page-tab" href="register.html" aria-current="page">Register</a>
+      <span class="page-tab-overlay" aria-hidden="true"></span>
+    </nav>
+ 
+    <h1>Create an account</h1>
+ 
+    <form id="register-form" method="post" novalidate>
+ 
+      <div class="field">
+        <label for="reg-username">Username</label>
+        <input id="reg-username" name="username" type="text"
+               autocomplete="username" autocapitalize="none" spellcheck="false"
+               required aria-describedby="reg-username-error">
+        <p class="field-error" id="reg-username-error"></p>
+      </div>
+ 
+      <div class="field">
+        <label for="reg-password">Password</label>
+        <div class="password-wrap">
+          <!-- autocomplete="new-password" tells password managers to offer a generated one -->
+          <input id="reg-password" name="password" type="password"
+                 autocomplete="new-password"
+                 required aria-describedby="reg-password-error reg-caps-hint">
+          <button type="button" class="toggle" id="reg-toggle"
+                  aria-controls="reg-password reg-confirm" aria-pressed="false">Show</button>
+        </div>
+        <p class="field-error" id="reg-password-error"></p>
+        <p class="field-hint" id="reg-caps-hint" aria-live="polite"></p>
+      </div>
+ 
+      <div class="field">
+        <label for="reg-confirm">Confirm password</label>
+        <input id="reg-confirm" name="confirm" type="password"
+               autocomplete="new-password"
+               required aria-describedby="reg-confirm-error">
+        <p class="field-error" id="reg-confirm-error"></p>
+      </div>
+ 
+      <!-- Security questions, if you keep them, go here as more .field blocks (question, then answer). -->
+ 
+      <p class="form-status" id="register-status" role="alert"></p>
+ 
+      <button type="submit" class="primary" id="register-button">Create account</button>
+    </form>
+  </main>
+ 
+  <footer class="meta">
+    <a href="db-config.html">Database connection</a>
+    <a href="https://github.com/sethwoodman/crypsis" target="_blank" rel="noopener noreferrer">Source code and documentation</a>
+  </footer>
+ 
+  <script src="api.js"></script>
+  <script src="forms.js"></script>
+  <script src="tabs.js"></script>
+  <script>
+    // ===== SETTINGS ==========================================================
+    const MIN_PASSWORD_LENGTH = 12;
+ 
+    const MESSAGES = {
+      'taken':         'That username is already taken. Try another.',
+      'unavailable':   "Can't reach the database. Check the connection settings, then try again.",
+      'error':         'Something went wrong while creating the account. Try again in a moment.',
+      'not-connected': 'Not connected to Python. Start the app with "python app.py" instead of opening this file in a browser.'
+    };
+ 
+    // ===== 1. FIND THE PARTS OF THE PAGE WE NEED =============================
+    const form           = document.querySelector('#register-form');
+    const usernameInput  = document.querySelector('#reg-username');
+    const passwordInput  = document.querySelector('#reg-password');
+    const confirmInput   = document.querySelector('#reg-confirm');
+    const toggleButton   = document.querySelector('#reg-toggle');
+    const registerButton = document.querySelector('#register-button');
+    const formStatus     = document.querySelector('#register-status');
+ 
+    // ===== 2. WIRE UP THE SHARED HELPERS (from forms.js) =====================
+    setupPasswordToggle(toggleButton, passwordInput);
+    toggleButton.addEventListener('click', function () { confirmInput.type = passwordInput.type; });   // both boxes together
+    setupCapsLockHint(passwordInput, document.querySelector('#reg-caps-hint'));
+ 
+    // ===== 3. WHEN SOMEONE PRESSES "CREATE ACCOUNT" ==========================
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      formStatus.textContent = '';
+ 
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+      const confirm  = confirmInput.value;
+ 
+      // Check every field first, so all the messages show at once...
+      setFieldError(usernameInput, username ? '' : 'Choose a username.');
+      setFieldError(passwordInput, password.length >= MIN_PASSWORD_LENGTH ? '' : 'Use at least ' + MIN_PASSWORD_LENGTH + ' characters.');
+      setFieldError(confirmInput,  confirm === password ? '' : "Passwords don't match.");
+ 
+      // ...then put the cursor in the first box that has a problem.
+      const firstProblem = [usernameInput, passwordInput, confirmInput].find(function (input) {
+        return input.getAttribute('aria-invalid') === 'true';
+      });
+      if (firstProblem) { firstProblem.focus(); return; }
+ 
+      registerButton.disabled = true;
+      registerButton.textContent = 'Creating account…';
+ 
+      let result;
+      try {
+        result = await callPython('register', username, password);   // runs Api.register in app.py
+      } catch (error) {
+        const reason = error.message === 'not-connected' ? 'not-connected' : 'error';
+        result = { ok: false, reason: reason };
+      }
+ 
+      registerButton.disabled = false;
+      registerButton.textContent = 'Create account';
+ 
+      if (result && result.ok) {
+        window.location.href = 'mfa-setup.html';   // next step: link an authenticator app
+        return;
+      }
+ 
+      const reason = result ? result.reason : 'error';
+      formStatus.textContent = MESSAGES[reason] || MESSAGES['error'];
+      if (reason === 'taken') { usernameInput.focus(); }
+    });
+ 
+    // Rules for every page: never console.log a password, and never save one
+    // in localStorage, sessionStorage, or a cookie you write yourself.
+  </script>
+</body>
+</html>

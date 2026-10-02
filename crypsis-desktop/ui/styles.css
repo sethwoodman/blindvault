@@ -1,0 +1,301 @@
+
+ 
+/* ========= FONT ========= */
+@font-face { font-family: "Inter"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/inter-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 500; font-style: normal; font-display: swap; src: url("fonts/inter-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/inter-latin-600-normal.woff2") format("woff2"); }
+ 
+/* ========= THEME ========= */
+:root {
+  --accent:    #2563EB;   /* main button, focus ring */
+  --on-accent: #FFFFFF;   /* text that sits on top of --accent */
+  --link:      #2563EB;   /* text links such as "Forgot your password?" */
+  --radius:    8px;       /* corners: 4px is sharper, 999px makes pill shapes */
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+ 
+  /* Slate greys, with a faint blue glow at the top of the page. */
+  --bg:            #F5F7FB;
+  --bg-2:          #EDF1F7;
+  --glow:          #DCE7FB;
+  --surface:       #FFFFFF;   /* the card and the inputs */
+  --surface-2:     #EEF2F7;   /* the tab bar track, button hover tints */
+  --raised:        #FFFFFF;   /* the sliding tab pill */
+  --text:          #0F172A;
+  --text-muted:    #64748B;
+  --border:        #E2E8F0;   /* the card */
+  --border-strong: #8A97AB;   /* inputs (dark enough to meet contrast rules) */
+  --error:         #B91C1C;
+  --shadow:        0 1px 2px rgb(15 23 42 / 0.05), 0 24px 48px -24px rgb(37 99 235 / 0.22);
+  --shadow-sm:     0 1px 2px rgb(15 23 42 / 0.10), 0 0 0 1px rgb(15 23 42 / 0.04);
+ 
+  /* Made from the values above. No need to change these. */
+  --ring:      color-mix(in srgb, var(--accent) 22%, transparent);   /* soft glow around a focused input */
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-lg: min(calc(var(--radius) + 6px), 1.5rem);              /* the card, capped for pill themes */
+}
+ 
+/* The same values for people whose device is set to dark mode. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --accent:    #2563EB;
+    --on-accent: #FFFFFF;
+    --link:      #8AB4FF;
+ 
+    --bg:            #0B1220;
+    --bg-2:          #0A0F1A;
+    --glow:          rgb(37 99 235 / 0.18);
+    --surface:       #111A2E;
+    --surface-2:     #182236;
+    --raised:        #243049;
+    --text:          #E6EBF5;
+    --text-muted:    #94A3B8;
+    --border:        #223049;
+    --border-strong: #56677F;
+    --error:         #F87171;
+    --shadow:        none;                        /* the border does the work on dark backgrounds */
+    --shadow-sm:     0 1px 2px rgb(0 0 0 / 0.5);
+  }
+}
+ 
+/* ===== PAGE =============================================================== */
+* { box-sizing: border-box; }
+ 
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 1.5rem;
+  display: grid;
+  align-content: center;        /* centre everything vertically... */
+  justify-items: center;        /* ...and horizontally */
+  gap: 1.25rem;
+  /* two layers: a soft glow near the top, over a slight top-to-bottom gradient */
+  background:
+    radial-gradient(60rem 28rem at 50% -8rem, var(--glow), transparent 70%) fixed,
+    linear-gradient(180deg, var(--bg), var(--bg-2)) fixed;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.9375rem;         /* 15px: a touch smaller than browser default, like most apps */
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+ 
+/* Form controls don't inherit the page font unless told to */
+input, button { font: inherit; color: inherit; }
+button { cursor: pointer; }
+ 
+/* Keyboard focus on buttons and links: a ring in the accent colour */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+ 
+/* ===== THE CARD =========================================================== */
+.panel {
+  width: 100%;
+  max-width: 25rem;
+  padding: 2.5rem 2.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.panel > p { margin: 0 0 0.75rem; }
+.panel > p:last-child { margin-bottom: 0; }
+ 
+/* Logo + name row at the top of every page */
+.brand {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.brand-mark { display: block; width: 1.875rem; height: 1.875rem; }
+ 
+h1 {
+  margin: 0 0 1.5rem;
+  font-size: 1.375rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+ 
+/* ===== PAGE TABS: the Login / Register switcher =========================== */
+.page-tabs {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 0.25rem;
+  margin-bottom: 1.75rem;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.page-tab {
+  position: relative;
+  z-index: 1;                        /* the text sits above the sliding pill */
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+  transition: color 0.25s ease;
+}
+.page-tab:hover { color: var(--text); }
+.page-tab[aria-current="page"] { color: var(--text); font-weight: 600; }
+ 
+/* The pill that slides between the tabs */
+.page-tab-overlay {
+  position: absolute;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  left: 0.25rem;
+  width: calc(50% - 0.25rem);
+  border-radius: var(--radius-sm);
+  background: var(--raised);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.25s ease;  /* 0.25s = SLIDE_MS in tabs.js */
+}
+/* When the second tab is the current page, the pill sits one tab to the right */
+.page-tab:nth-child(2)[aria-current="page"] ~ .page-tab-overlay { transform: translateX(100%); }
+ 
+/* ===== FORMS ============================================================== */
+.field { margin-bottom: 1.125rem; }
+ 
+label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+ 
+input {
+  width: 100%;
+  height: 2.75rem;                   /* one fixed height keeps every box identical */
+  padding: 0 0.875rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+input:hover { border-color: var(--text-muted); }
+input:focus-visible {
+  outline: none;                     /* the ring below replaces the default outline */
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
+}
+input[aria-invalid="true"] { border-color: var(--error); }
+input[aria-invalid="true"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--error) 18%, transparent); }
+ 
+/* A password box with a Show/Hide button inside it */
+.password-wrap { position: relative; }
+.password-wrap input { padding-right: 4.25rem; }
+ 
+.toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.375rem;
+  transform: translateY(-50%);
+  padding: 0.3rem 0.6rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.toggle:hover { color: var(--text); background: var(--surface-2); }
+ 
+.field-error,
+.field-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+}
+.field-error { color: var(--error); }
+.field-hint  { color: var(--text-muted); }
+.field-error:not(:empty),
+.field-hint:not(:empty) { margin-top: 0.4rem; }
+ 
+/* A message about the whole form (wrong password, database down...) */
+.form-status { margin: 0; color: var(--error); font-size: 0.875rem; }
+.form-status:not(:empty) {
+  margin-bottom: 1.125rem;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--error) 30%, transparent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--error) 7%, transparent);
+}
+ 
+/* ===== BUTTONS ============================================================ */
+.primary {
+  width: 100%;
+  height: 2.75rem;
+  margin-top: 0.75rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.12);
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+.primary:hover    { background: color-mix(in srgb, var(--accent) 86%, var(--text)); }   /* a shade darker */
+.primary:active   { transform: translateY(1px); }                                       /* a tiny press */
+.primary:disabled { opacity: 0.6; cursor: progress; transform: none; }
+ 
+/* ===== LINKS ============================================================== */
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);   /* quiet underline... */
+  border-radius: 2px;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+a:hover { text-decoration-color: currentColor; }                               /* ...full strength on hover */
+ 
+/* The row of links under a form: blue, underlined only on hover */
+.other-ways {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.375rem 1.5rem;
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+}
+.other-ways > :only-child { margin-inline: auto; }   /* a lone link sits in the middle */
+.other-ways a { color: var(--link); font-weight: 500; text-decoration: none; }
+.other-ways a:hover { text-decoration: underline; }
+ 
+/* The small links under the card */
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.375rem 1.5rem;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+.meta a:hover { color: var(--text); }
+ 
+/* ===== MOTION AND SMALL WINDOWS =========================================== */
+/* People who turn off animations in their OS get instant changes everywhere */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after { transition: none !important; }
+}
+ 
+/* When the window is narrow, the card's outline goes away and the form fills the window */
+@media (max-width: 30rem) {
+  body   { padding: 1.5rem 1.25rem; background: var(--surface); justify-items: stretch; }
+  .panel { max-width: none; padding: 0.5rem 0.25rem; border: 0; box-shadow: none; }
+}

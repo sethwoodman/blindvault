@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Sign in to Crypsis</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="panel">
+    <div class="brand">
+      <span>Crypsis</span>
+    </div>
+ 
+    <!-- The Login / Register tab slider -->
+    <nav class="page-tabs" aria-label="Sign in or create an account">
+      <a class="page-tab" href="login.html" aria-current="page">Login</a>
+      <a class="page-tab" href="register.html">Register</a>
+      <span class="page-tab-overlay" aria-hidden="true"></span>
+    </nav>
+ 
+    <h1>Sign in</h1>
+ 
+    <!-- Login Form -->
+    <form id="login-form" method="post" novalidate>
+ <!-- Username Field -->
+      <div class="field">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text"
+               autocomplete="username" autocapitalize="none" spellcheck="false"
+               required aria-describedby="username-error">
+        <p class="field-error" id="username-error"></p>
+      </div>
+ <!-- Password Field -->
+      <div class="field">
+        <label for="password">Password</label>
+        <div class="password-wrap">
+          <input id="password" name="password" type="password"
+                 autocomplete="current-password"
+                 required aria-describedby="password-error caps-hint">
+          <button type="button" class="toggle" id="toggle-password"
+                  aria-controls="password" aria-pressed="false">Show</button>
+        </div>
+        <p class="field-error" id="password-error"></p>
+        <p class="field-hint" id="caps-hint" aria-live="polite"></p>
+      </div>
+ 
+      <!-- role="alert" makes screen readers read this out as soon as text appears in it -->
+      <p class="form-status" id="form-status" role="alert"></p>
+ 
+      <button type="submit" class="primary" id="sign-in-button">Sign in</button>
+    </form>
+ 
+    <nav class="other-ways" aria-label="Other options">
+      <a href="forgot-password.html">Forgot your password?</a>
+    </nav>
+  </main>
+ 
+  <footer class="meta">
+    <a href="db-config.html">Database connection</a>
+    <!-- target="_blank" links open in the computer's normal browser -->
+    <a href="https://github.com/sethwoodman/crypsis" target="_blank" rel="noopener noreferrer">Source code and documentation</a>
+  </footer>
+ 
+  <script src="api.js"></script>
+  <script src="forms.js"></script>
+  <script src="tabs.js"></script>
+  <script>
+    // What to tell the person for each "reason" Python can send back.
+    const MESSAGES = {
+      'wrong':         "That username and password don't match. Check both and try again.",
+      'unavailable':   "Can't reach the database. Check the connection settings, then try again.",
+      'error':         'Something went wrong while signing in. Try again in a moment.',
+      'not-connected': 'Not connected to Python. Start the app with "python app.py" instead of opening this file in a browser.'
+    };
+ 
+    // DOM Elements
+    const form          = document.querySelector('#login-form');
+    const usernameInput = document.querySelector('#username');
+    const passwordInput = document.querySelector('#password');
+    const signInButton  = document.querySelector('#sign-in-button');
+    const formStatus    = document.querySelector('#form-status');
+ 
+    // ===== 2. WIRE UP THE SHARED HELPERS (from forms.js) =====================
+    setupPasswordToggle(document.querySelector('#toggle-password'), passwordInput);
+    setupCapsLockHint(passwordInput, document.querySelector('#caps-hint'));
+ 
+    // ===== 3. WHEN SOMEONE PRESSES "SIGN IN" =================================
+    // "async" lets this function use "await": pause here until Python answers,
+    // without freezing the rest of the page.
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();               // stop the browser reloading the page
+      formStatus.textContent = '';
+ 
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value; // never trim or change a password
+ 
+      // Check both fields, then put the cursor in the first one that is empty.
+      setFieldError(usernameInput, username ? '' : 'Enter your username.');
+      setFieldError(passwordInput, password ? '' : 'Enter your password.');
+      if (!username) { usernameInput.focus(); return; }
+      if (!password) { passwordInput.focus(); return; }
+ 
+      signInButton.disabled = true;
+      signInButton.textContent = 'Signing in…';
+ 
+      let result;
+      try {
+        result = await callPython('sign_in', username, password);   // runs Api.sign_in in app.py
+      } catch (error) {
+        const reason = error.message === 'not-connected' ? 'not-connected' : 'error';
+        result = { ok: false, reason: reason };
+      }
+ 
+      signInButton.disabled = false;
+      signInButton.textContent = 'Sign in';
+ 
+      if (result && result.ok) {
+        // PYTHON decided the password was right. This page never decides.
+        window.location.href = 'vault.html';
+        return;
+      }
+ 
+      const reason = result ? result.reason : 'error';
+      formStatus.textContent = MESSAGES[reason] || MESSAGES['error'];
+ 
+      if (reason === 'wrong') {
+        passwordInput.value = '';
+        passwordInput.focus();
+      }
+    });
+
+  </script>
+</body>
+</html>
+ 
