@@ -1,5 +1,3 @@
-
- 
 /* ========= FONT ========= */
 @font-face { font-family: "Inter"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/inter-latin-400-normal.woff2") format("woff2"); }
 @font-face { font-family: "Inter"; font-weight: 500; font-style: normal; font-display: swap; src: url("fonts/inter-latin-500-normal.woff2") format("woff2"); }
@@ -25,6 +23,7 @@
   --border:        #E2E8F0;   /* the card */
   --border-strong: #8A97AB;   /* inputs (dark enough to meet contrast rules) */
   --error:         #B91C1C;
+  --success:       #15803D;
   --shadow:        0 1px 2px rgb(15 23 42 / 0.05), 0 24px 48px -24px rgb(37 99 235 / 0.22);
   --shadow-sm:     0 1px 2px rgb(15 23 42 / 0.10), 0 0 0 1px rgb(15 23 42 / 0.04);
  
@@ -52,6 +51,7 @@
     --border:        #223049;
     --border-strong: #56677F;
     --error:         #F87171;
+    --success:       #4ADE80;
     --shadow:        none;                        /* the border does the work on dark backgrounds */
     --shadow-sm:     0 1px 2px rgb(0 0 0 / 0.5);
   }
@@ -299,3 +299,91 @@ a:hover { text-decoration-color: currentColor; }                               /
   body   { padding: 1.5rem 1.25rem; background: var(--surface); justify-items: stretch; }
   .panel { max-width: none; padding: 0.5rem 0.25rem; border: 0; box-shadow: none; }
 }
+
+/* ===== DATABASE CONNECTION PAGE =========================================== */
+/* A quiet sentence under the heading */
+.lead {
+  margin: -0.75rem 0 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* Two buttons side by side */
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.actions .primary { margin-top: 0; }
+
+/* The outlined button, for the less important of two actions */
+.secondary {
+  height: 2.75rem;
+  padding: 0 1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.secondary:hover    { background: var(--surface-2); border-color: var(--text-muted); }
+.secondary:disabled { opacity: 0.6; cursor: progress; }
+
+/* A green version of the status box, for good news */
+.form-status.ok { color: var(--success); }
+.form-status.ok:not(:empty) {
+  border-color: color-mix(in srgb, var(--success) 30%, transparent);
+  background: color-mix(in srgb, var(--success) 7%, transparent);
+}
+/* ===== MFA SETUP AND RECOVERY KEY PAGES =================================== */
+/* The box that holds the QR code: a square, centred, with a quiet outline */
+.qr {
+  display: grid;
+  place-items: center;              /* centre the picture or the placeholder text both ways */
+  width: 12rem;
+  height: 12rem;
+  margin: 0 auto 1rem;              /* auto left and right: centred in the card */
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.qr img { width: 100%; height: 100%; border-radius: var(--radius-sm); }
+.qr-placeholder { margin: 0; padding: 1rem; color: var(--text-muted); font-size: 0.8125rem; text-align: center; }
+
+/* The secret as text, for people who cannot scan */
+.secret {
+  margin: 0 0 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+.secret code {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;           /* spaced-out letters are easier to copy by eye */
+  color: var(--text);
+}
+
+/* A read-only box looks like a normal box but does not pretend to be editable */
+input[readonly] { background: var(--surface-2); cursor: text; }
+#recovery-key {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  letter-spacing: 0.06em;
+}
+
+/* A checkbox with its label on one line */
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.25rem 0 0.25rem;
+  color: var(--text);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+.check input { width: 1.1rem; height: 1.1rem; margin: 0; accent-color: var(--accent); }
+
+/* An outlined button that sits below its box rather than beside another button */
+.secondary.block { width: 100%; margin-top: 0.25rem; }

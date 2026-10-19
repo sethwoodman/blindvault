@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Set up two-factor authentication - Crypsis</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="panel">
+
+    <h1>Two-factor authentication set up</h1>
+    <p class="lead">Scan this qr code with your phone, then enter the 6-digit code it shows to link it to your account.</p>
+
+    <!-- The QR code will shown through the python library, qrcode. -->
+    <div class="qr" id="qr-box">
+      <img id="qr-image" alt="QR code for your authenticator app" hidden>
+      <p class="qr-placeholder" id="qr-placeholder">QR code will appear here</p>
+    </div>
+
+
+    <p> </p>
+
+    <form id="mfa-form" method="post" novalidate>
+      <div class="field">
+        <label for="mfa-code">6-digit code</label>
+        <input id="mfa-code" name="code" type="text" inputmode="numeric"
+               autocomplete="one-time-code" placeholder="123456"
+               required aria-describedby="mfa-code-error">
+        <p class="field-error" id="mfa-code-error"></p>
+      </div>
+
+      <p class="form-status" id="mfa-status" role="alert"></p>
+
+      <button type="submit" class="primary" id="verify-button">Verify and link</button>
+    </form>
+
+
+
+  <footer class="meta">
+    <a href="login.html">Back to sign in</a>
+  </footer>
+
+  <script src="api.js"></script>
+  <script src="forms.js"></script>
+  <script>
+    // response messages.
+    const MESSAGES = {
+      'wrong-code':    "That code didn't match. Codes change every 30 seconds, so check the app and try again.",
+      'error':         'Something went wrong while verifying. Try again in a moment.',
+      'not-connected': 'Not connected to Python. Start the app with "python app.py" instead of opening this file in a browser.'
+    };
+
+    // ===== 1. FIND THE PARTS OF THE PAGE WE NEED =============================
+    const form         = document.querySelector('#mfa-form');
+    const codeInput    = document.querySelector('#mfa-code');
+    const verifyButton = document.querySelector('#verify-button');
+    const formStatus   = document.querySelector('#mfa-status');
+    const qrImage      = document.querySelector('#qr-image');
+    const qrPlaceholder = document.querySelector('#qr-placeholder');
+    const secretText   = document.querySelector('#secret-text');
+
+    // ===== 2. ASK PYTHON FOR THE QR CODE WHEN THE PAGE OPENS =================
+    // Until it does, the placeholder stays and the page still works.
+    async function loadQr() {
+      try {
+        const setup = await callPython('get_mfa_setup');
+        if (setup && setup.qr) {
+          qrImage.src = setup.qr;            // a data: URL is a picture written as text
+          qrImage.hidden = false;
+          qrPlaceholder.hidden = true;
+        }
+        if (setup && setup.secret) {
+          secretText.textContent = setup.secret;
+        }
+      } catch (error) {
+        // No Python, or no method yet: leave the placeholder showing.
+      }
+    }
+    loadQr();
+
+    // ===== 3. WHEN SOMEONE PRESSES "VERIFY AND LINK" =========================
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      formStatus.textContent = '';
+
+      // Keep digits only, so "123 456" or "123-456" still work.
+      const code = codeInput.value.replace(/\D/g, '');
+
+      setFieldError(codeInput, code.length === 6 ? '' : 'Enter the 6-digit code from your app.');
+      if (code.length !== 6) { codeInput.focus(); return; }
+
+      verifyButton.disabled = true;
+      verifyButton.textContent = 'Verifying…';
+
+      let result;
+      try {
+        result = await callPython('verify_mfa', code);   // runs Api.verify_mfa in app.py
+      } catch (error) {
+        const reason = error.message === 'not-connected' ? 'not-connected' : 'error';
+        result = { ok: false, reason: reason };
+      }
+
+      verifyButton.disabled = false;
+      verifyButton.textContent = 'Verify and link';
+
+      if (result && result.ok) {
+        window.location.href = 'recovery-code.html';   // next: show the recovery key once
+        return;
+      }
+
+      const reason = result ? result.reason : 'error';
+      formStatus.textContent = MESSAGES[reason] || MESSAGES['error'];
+      codeInput.value = '';
+      codeInput.focus();
+    });
+  </script>
+</body>
+</html>

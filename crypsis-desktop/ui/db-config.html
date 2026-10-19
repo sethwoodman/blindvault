@@ -9,10 +9,185 @@
 </head>
 <body>
   <main class="panel">
-  
     <h1>Database connection</h1>
-    <p>This page is not built yet.</p>
+
+    <form id="db-form" method="post" novalidate>
+
+      <div class="field">
+        <label for="db-host">IP address or hostname</label>
+        <input id="db-host" name="host" type="text"
+               autocomplete="off" autocapitalize="none" spellcheck="false"
+               placeholder="192.168.1.20 or db.example.com"
+               required aria-describedby="db-host-error">
+        <p class="field-error" id="db-host-error"></p>
+      </div>
+
+      <div class="field">
+        <label for="db-port">Port</label>
+        <input id="db-port" name="port" type="number" inputmode="numeric"
+               min="1" max="65535" value="3306"
+               required aria-describedby="db-port-error">
+        <p class="field-error" id="db-port-error"></p>
+      </div>
+
+      <div class="field">
+        <label for="db-name">Database Name</label>
+        <input id="db-name" name="database" type="text"
+               autocomplete="off" autocapitalize="none" spellcheck="false"
+               required aria-describedby="db-name-error">
+        <p class="field-error" id="db-name-error"></p>
+      </div>
+
+      <div class="field">
+        <label for="db-user">Username</label>
+        <input id="db-user" name="username" type="text"
+               autocomplete="off" autocapitalize="none" spellcheck="false"
+               required aria-describedby="db-user-error">
+        <p class="field-error" id="db-user-error"></p>
+      </div>
+
+      <div class="field">
+        <label for="db-password">Password</label>
+        <div class="password-wrap">
+          <input id="db-password" name="password" type="password"
+                 autocomplete="off"
+                 required aria-describedby="db-password-error db-caps-hint">
+          <button type="button" class="toggle" id="db-toggle"
+                  aria-controls="db-password" aria-pressed="false">Show</button>
+        </div>
+        <p class="field-error" id="db-password-error"></p>
+        <p class="field-hint" id="db-caps-hint" aria-live="polite"></p>
+      </div>
+
+      <p class="form-status" id="db-status" role="alert"></p>
+
+      <div class="actions">
+        <button type="submit" class="secondary" id="test-button">Test connection</button>
+        <button type="button" class="primary" id="bind-button" disabled>Bind connection</button>
+      </div>
+    </form>
+
     <p><a href="login.html">Back to sign in</a></p>
   </main>
+
+  <script src="api.js"></script>
+  <script src="forms.js"></script>
+  <script>
+    // ===== 1. FIND THE PARTS OF THE PAGE WE NEED =============================
+    const form          = document.querySelector('#db-form');
+    const hostInput     = document.querySelector('#db-host');
+    const portInput     = document.querySelector('#db-port');
+    const nameInput     = document.querySelector('#db-name');
+    const userInput     = document.querySelector('#db-user');
+    const passwordInput = document.querySelector('#db-password');
+    const testButton    = document.querySelector('#test-button');
+    const bindButton    = document.querySelector('#bind-button');
+    const formStatus    = document.querySelector('#db-status');
+
+    // ===== 2. WIRE UP THE SHARED HELPERS (from forms.js) =====================
+    setupPasswordToggle(document.querySelector('#db-toggle'), passwordInput);
+    setupCapsLockHint(passwordInput, document.querySelector('#db-caps-hint'));
+
+    // ===== 3. MESSAGES =======================================================
+    // What to tell the person for each "reason" Python can send back.
+    const MESSAGES = {
+      'invalid':       'Some of the details are missing or not valid. Check the fields above.',
+      'bad-host':      "That hostname can't be found. Check the spelling, or use the IP address instead.",
+      'unreachable':   'Nothing is answering at that address and port. Check that the server is running and the port is right.',
+      'auth':          'The server refused that username and password.',
+      'no-database':   "Signed in, but that database doesn't exist or this user is not allowed to open it.",
+      'error':         'Something went wrong while testing. Try again in a moment.',
+      'not-connected': 'Not connected to Python. Start the app with "python app.py" instead of opening this file in a browser.'
+    };
+
+    // Which box to put the cursor in for each failure, so the fix is one click away.
+    const FOCUS_FOR = {
+      'bad-host':    hostInput,
+      'unreachable': hostInput,
+      'auth':        passwordInput,
+      'no-database': nameInput
+    };
+
+    // ===== 4. SMALL HELPERS FOR THIS PAGE ====================================
+    // Read the five boxes into one object. Python receives it as a dictionary,
+    // so each value is read by name instead of by position.
+    function readSettings() {
+      return {
+        host:     hostInput.value.trim(),
+        port:     Number(portInput.value),      // the box gives text; Number() turns it into a number
+        database: nameInput.value.trim(),
+        username: userInput.value.trim(),
+        password: passwordInput.value           // never trim a password
+      };
+    }
+
+    // Show a message in the status box. Good news is green: the 'ok' class
+    // is what turns it green (see .form-status.ok in styles.css).
+    function showStatus(message, isGood) {
+      formStatus.textContent = message;
+      formStatus.classList.toggle('ok', isGood);
+    }
+
+    // Check all five fields and show a message under each one that is wrong.
+    // Returns true only when everything is filled in correctly.
+    function fieldsAreValid(settings) {
+      const hostOk = settings.host !== '' && !settings.host.includes(' ');
+      const portOk = Number.isInteger(settings.port) && settings.port >= 1 && settings.port <= 65535;
+
+      setFieldError(hostInput,     hostOk ? '' : 'Enter the server address, with no spaces.');
+      setFieldError(portInput,     portOk ? '' : 'Enter a port from 1 to 65535.');
+      setFieldError(nameInput,     settings.database ? '' : 'Enter the database name.');
+      setFieldError(userInput,     settings.username ? '' : 'Enter the username.');
+      setFieldError(passwordInput, settings.password ? '' : 'Enter the password.');
+
+      const firstProblem = [hostInput, portInput, nameInput, userInput, passwordInput].find(function (input) {
+        return input.getAttribute('aria-invalid') === 'true';
+      });
+      if (firstProblem) { firstProblem.focus(); }
+      return !firstProblem;                     // "no problem found" means valid
+    }
+
+  
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();                   // stop the browser submitting the form itself
+      showStatus('', false);
+      bindButton.disabled = true;               // a new test starts, so the old result no longer counts
+
+      const settings = readSettings();
+      if (!fieldsAreValid(settings)) { return; }
+
+      testButton.disabled = true;
+      testButton.textContent = 'Testing…';
+
+      let result;
+      try {
+        result = await callPython('test_db', settings);   // runs Api.test_db in app.py
+      } catch (error) {
+        const reason = error.message === 'not-connected' ? 'not-connected' : 'error';
+        result = { ok: false, reason: reason };
+      }
+
+      testButton.disabled = false;
+      testButton.textContent = 'Test connection';
+
+      if (result && result.ok) {
+        showStatus('Connected to ' + result.server + ' at ' + settings.host + ':' + settings.port + '. You can bind this connection.', true);
+        bindButton.disabled = false;            // the details are proven to work, so Bind is allowed now
+        return;
+      }
+
+      const reason = result ? result.reason : 'error';
+      showStatus(MESSAGES[reason] || MESSAGES['error'], false);
+      if (FOCUS_FOR[reason]) { FOCUS_FOR[reason].focus(); }
+    });
+
+    
+    form.addEventListener('input', function () {
+      bindButton.disabled = true;
+      showStatus('', false);
+    });
+
+    // Part 3 (the Bind button) continues here.
+  </script>
 </body>
 </html>

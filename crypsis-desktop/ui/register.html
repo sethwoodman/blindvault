@@ -54,7 +54,40 @@
         <p class="field-error" id="reg-confirm-error"></p>
       </div>
  
-      <!-- Security questions, if you keep them, go here as more .field blocks (question, then answer). -->
+      <!-- Two security questions. -->
+      <div class="field">
+        <label for="reg-q1">Security question 1</label>
+        <input id="reg-q1" name="question1" type="text"
+               autocomplete="off"
+               placeholder="What was the name of your first pet?"
+               required aria-describedby="reg-q1-error">
+        <p class="field-error" id="reg-q1-error"></p>
+      </div>
+
+      <div class="field">
+        <label for="reg-a1">Answer 1</label>
+        <input id="reg-a1" name="answer1" type="text"
+               autocomplete="off" spellcheck="false"
+               required aria-describedby="reg-a1-error">
+        <p class="field-error" id="reg-a1-error"></p>
+      </div>
+
+      <div class="field">
+        <label for="reg-q2">Security question 2</label>
+        <input id="reg-q2" name="question2" type="text"
+               autocomplete="off"
+               placeholder="What street did you grow up on?"
+               required aria-describedby="reg-q2-error">
+        <p class="field-error" id="reg-q2-error"></p>
+      </div>
+
+      <div class="field">
+        <label for="reg-a2">Answer 2</label>
+        <input id="reg-a2" name="answer2" type="text"
+               autocomplete="off" spellcheck="false"
+               required aria-describedby="reg-a2-error">
+        <p class="field-error" id="reg-a2-error"></p>
+      </div>
  
       <p class="form-status" id="register-status" role="alert"></p>
  
@@ -81,7 +114,7 @@
       'not-connected': 'Not connected to Python. Start the app with "python app.py" instead of opening this file in a browser.'
     };
  
-    // ===== 1. FIND THE PARTS OF THE PAGE WE NEED =============================
+    // ===== 1. PAGE ELEMENTS =============================
     const form           = document.querySelector('#register-form');
     const usernameInput  = document.querySelector('#reg-username');
     const passwordInput  = document.querySelector('#reg-password');
@@ -89,6 +122,10 @@
     const toggleButton   = document.querySelector('#reg-toggle');
     const registerButton = document.querySelector('#register-button');
     const formStatus     = document.querySelector('#register-status');
+    const q1Input        = document.querySelector('#reg-q1');
+    const a1Input        = document.querySelector('#reg-a1');
+    const q2Input        = document.querySelector('#reg-q2');
+    const a2Input        = document.querySelector('#reg-a2');
  
     // ===== 2. WIRE UP THE SHARED HELPERS (from forms.js) =====================
     setupPasswordToggle(toggleButton, passwordInput);
@@ -103,14 +140,22 @@
       const username = usernameInput.value.trim();
       const password = passwordInput.value;
       const confirm  = confirmInput.value;
+      const question1 = q1Input.value.trim();
+      const answer1   = a1Input.value.trim();
+      const question2 = q2Input.value.trim();
+      const answer2   = a2Input.value.trim();
  
       // Check every field first, so all the messages show at once...
       setFieldError(usernameInput, username ? '' : 'Choose a username.');
       setFieldError(passwordInput, password.length >= MIN_PASSWORD_LENGTH ? '' : 'Use at least ' + MIN_PASSWORD_LENGTH + ' characters.');
       setFieldError(confirmInput,  confirm === password ? '' : "Passwords don't match.");
+      setFieldError(q1Input, question1 ? '' : 'Enter a security question.');
+      setFieldError(a1Input, answer1   ? '' : 'Enter the answer.');
+      setFieldError(q2Input, question2 && question2 !== question1 ? '' : 'Enter a different second question.');
+      setFieldError(a2Input, answer2   ? '' : 'Enter the answer.');
  
       // ...then put the cursor in the first box that has a problem.
-      const firstProblem = [usernameInput, passwordInput, confirmInput].find(function (input) {
+      const firstProblem = [usernameInput, passwordInput, confirmInput, q1Input, a1Input, q2Input, a2Input].find(function (input) {
         return input.getAttribute('aria-invalid') === 'true';
       });
       if (firstProblem) { firstProblem.focus(); return; }
@@ -120,7 +165,7 @@
  
       let result;
       try {
-        result = await callPython('register', username, password);   // runs Api.register in app.py
+        result = await callPython('register', username, password, question1, answer1, question2, answer2);   // runs Api.register in app.py
       } catch (error) {
         const reason = error.message === 'not-connected' ? 'not-connected' : 'error';
         result = { ok: false, reason: reason };

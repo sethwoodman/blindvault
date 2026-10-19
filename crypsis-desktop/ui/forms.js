@@ -1,13 +1,6 @@
-/* forms.js: helpers every form page shares. Include it before the page's own script.
+//forms.js: helpers every form page shares. Include it before the page's own script.
 
-   setFieldError(input, message)           show a message under a field ('' clears it)
-   setupPasswordToggle(button, input)      make a Show/Hide button work
-   setupCapsLockHint(input, hintElement)   warn while Caps Lock is on
-
-   setFieldError expects a <p> whose id is the input's id plus "-error",
-   for example <input id="username"> and <p id="username-error">.
-*/
-
+// show a message under a field
 function setFieldError(input, message) {
   const errorText = document.querySelector('#' + input.id + '-error');
   errorText.textContent = message;
@@ -18,7 +11,7 @@ function setFieldError(input, message) {
     input.removeAttribute('aria-invalid');
   }
 }
-
+// make a Show/Hide button work
 function setupPasswordToggle(toggleButton, passwordInput) {
   toggleButton.addEventListener('click', function () {
     const isHidden = passwordInput.type === 'password';
@@ -28,7 +21,8 @@ function setupPasswordToggle(toggleButton, passwordInput) {
   });
 }
 
-// Passwords are typed blind, so Caps Lock is an easy way to get locked out.
+// Passwords are typed blind, so Caps Lock is an easy way to get locked out. warn while Caps Lock is on
+
 function setupCapsLockHint(passwordInput, hintElement) {
   function check(event) {
     // Browser autofill sends fake key events without getModifierState, so check first.
